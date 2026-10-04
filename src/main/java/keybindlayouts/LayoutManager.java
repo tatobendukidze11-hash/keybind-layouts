@@ -52,7 +52,7 @@ public class LayoutManager {
         MinecraftClient mc = MinecraftClient.getInstance();
         Map<String, String> map = new LinkedHashMap<>();
         for (KeyBinding kb : mc.options.allKeys) {
-            map.put(kb.getTranslationKey(), kb.getBoundKeyTranslationKey());
+            map.put(kb.getId(), kb.getBoundKeyTranslationKey());
         }
         layouts.put(name, map);
         write();
@@ -63,7 +63,7 @@ public class LayoutManager {
         if (map == null) return;
         MinecraftClient mc = MinecraftClient.getInstance();
         for (KeyBinding kb : mc.options.allKeys) {
-            String key = map.get(kb.getTranslationKey());
+            String key = map.get(kb.getId());
             if (key != null) {
                 kb.setBoundKey(InputUtil.fromTranslationKey(key));
             }
