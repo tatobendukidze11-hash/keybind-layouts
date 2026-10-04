@@ -19,6 +19,9 @@ public class LayoutManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("keybindlayouts.json");
 
+    private static final Path MKB = FabricLoader.getInstance().getConfigDir().resolve("multi-key-bindings.json");
+    private static final String MKB_KEY = "__mkb__";
+
     // layout name -> (keybind id -> key translation key)
     private static Map<String, Map<String, String>> layouts = new LinkedHashMap<>();
 
@@ -54,13 +57,21 @@ public class LayoutManager {
         for (KeyBinding kb : mc.options.allKeys) {
             map.put(kb.getId(), kb.getBoundKeyTranslationKey());
         }
+        try {
+            if (Files.exists(MKB)) {
+                map.put(MKB_KEY, Files.readString(MKB));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         layouts.put(name, map);
         write();
     }
 
-    public static void apply(String name) {
+    /** @return true if Multi Key Bindings data was written (game restart needed) */
+    public static boolean apply(String name) {
         Map<String, String> map = layouts.get(name);
-        if (map == null) return;
+        if (map == null) return false;
         MinecraftClient mc = MinecraftClient.getInstance();
         for (KeyBinding kb : mc.options.allKeys) {
             String key = map.get(kb.getId());
@@ -70,6 +81,17 @@ public class LayoutManager {
         }
         KeyBinding.updateKeysByCode();
         mc.options.write();
+
+        String mkb = map.get(MKB_KEY);
+        if (mkb != null) {
+            try {
+                Files.writeString(MKB, mkb);
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 
     public static void delete(String name) {
