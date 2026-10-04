@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 public class LayoutScreen extends Screen {
     private TextFieldWidget nameField;
+    private String status = null;
 
     public LayoutScreen() {
         super(Text.literal("Keybind Layouts"));
@@ -19,11 +20,23 @@ public class LayoutScreen extends Screen {
         int cx = this.width / 2;
         int y = 40;
 
+        if (status != null) {
+            ButtonWidget label = ButtonWidget.builder(Text.literal(status), b -> {})
+                    .dimensions(cx - 150, 10, 300, 20).build();
+            label.active = false;
+            addDrawableChild(label);
+        }
+
         // existing layouts: click name to apply, X to delete
         for (String name : new ArrayList<>(LayoutManager.all().keySet())) {
             addDrawableChild(ButtonWidget.builder(Text.literal(name), b -> {
-                LayoutManager.apply(name);
-                close();
+                boolean restart = LayoutManager.apply(name);
+                if (restart) {
+                    status = "Multi Key Bindings: restart the game to apply";
+                    clearAndInit();
+                } else {
+                    close();
+                }
             }).dimensions(cx - 100, y, 170, 20).build());
 
             addDrawableChild(ButtonWidget.builder(Text.literal("X"), b -> {
