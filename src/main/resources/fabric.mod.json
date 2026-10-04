@@ -17,7 +17,10 @@
 	"entrypoints": {
 		"main": [
 			"keybindlayouts.KeybindLayouts"
-		]
+		],
+		"client": [
+	"keybindlayouts.KeybindLayoutsClient"
+]
 	},
 	"mixins": [
 		"keybind-layouts.mixins.json"
