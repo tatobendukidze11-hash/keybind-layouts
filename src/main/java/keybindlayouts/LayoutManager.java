@@ -9,10 +9,14 @@ import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 
 import java.io.Reader;
+import java.lang.reflect.Method;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class LayoutManager {
@@ -85,13 +89,40 @@ public class LayoutManager {
         String mkb = map.get(MKB_KEY);
         if (mkb != null) {
             try {
-                Files.writeString(MKB, mkb);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
+                reloadMultiKeyBindings(mkb);
+                return false; // applied live, no restart needed
+            } catch (Throwable t) {
+                t.printStackTrace();
+                // fallback: just write the file, applies after restart
+                try {
+                    Files.writeString(MKB, mkb);
+                    return true;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
         return false;
+    }
+
+    /** Live-reload the Multi Key Bindings mod via reflection. */
+    private static void reloadMultiKeyBindings(String content) throws Exception {
+        Class<?> mgr = Class.forName("us.kenny.MultiKeyBindingManager");
+        Class<?> bindingClass = Class.forName("us.kenny.core.MultiKeyBinding");
+        Method getAll = mgr.getMethod("getKeyBindings");
+        Method remove = mgr.getMethod("removeKeyBinding", bindingClass);
+
+        // remove all current bindings first (copy to avoid concurrent modification)
+        Collection<?> current = (Collection<?>) getAll.invoke(null);
+        List<Object> copy = new ArrayList<>(current);
+        for (Object b : copy) {
+            remove.invoke(null, b);
+        }
+
+        // write the layout's file and make the mod read it again
+        Files.writeString(MKB, content);
+        Class<?> cfg = Class.forName("us.kenny.ConfigManager");
+        cfg.getMethod("loadConfigFile").invoke(null);
     }
 
     public static void delete(String name) {
